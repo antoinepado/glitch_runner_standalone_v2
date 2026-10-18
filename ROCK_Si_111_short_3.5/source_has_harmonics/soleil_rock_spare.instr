@@ -1,0 +1,336 @@
+/*******************************************************************************
+* Instrument: ROCK beam-line at SOLEIL
+*
+* %Identification
+* Written by: Stephane Bac, Antoine Padovani, Emmanuel Farhi
+* Date: 18/10/2026
+* Origin: SOLEIL
+* Version: 0.4
+* %INSTRUMENT_SITE: SOLEIL
+*
+* ROCK beam-line at SOLEIL
+*
+* %Description
+* ROCK : Rocking Optics for Chemical Kinetics ROCK time-resolved X-ray
+*
+* Absorption spectroscopy (XAS) beamline Energy range 4 - 40 keV 
+* The ROCK beamline (ROCK being the acronym for Rocking Optics for Chemical Kinetics)
+* is devoted to the study of fast kinetic processes in nanomaterials used in
+* catalysis and batteries. The objective is to contribute to the development of
+* more efficient catalysts and batteries which should find successful industrial
+* applications in the field of energy generation and storage in compliance with
+* the protection of public health and environment. The better knowledge at the
+* atomic scale of nanomaterials involved in catalysis or energy storage provided
+* by time-resolved XAS is recognized by the concerned communities as mandatory
+* for establishing synthesis strategies leading to important breakthroughs in
+* the production of energy from renewable sources and in the development of
+* advanced energy storage devices. 
+*
+* Position | Element
+* ---------|--------------------------------------------------------------------
+* 0        | Bending_magnet 1.72 T
+* 8.5336   | Slit 1/2
+* 10.15    | Toroidal mirror M1
+* 11.69    | Slit 3
+* 16.82    | Mirror M2a
+* 18.15    | Slit 4
+* 19.25    | Channel-cut Si monochromator at 20 (Si220), 18.92 or 19.25 m (Si111)
+* 21.13    | Slit 5/6
+* 22.44    | Mirror M2b
+* 32.70    | Sample
+*
+* %Parameters
+* Etohit:           [keV]    Energy to hit, i.e. selected by the channel-cut monochromator
+* dE:               [keV]    Energy spread at the source
+* angle_m2a_m2b:    [rad]    M2A/M2B mirror's deviation angle, can vary from 0.0035 to 0.0104
+* angle_m1:         [rad]    M1 mirror's deviation angle
+* sample_file:      [string] Sample chemical formulae
+* reflec_material_M1:      [str] Material reflectivity file name for M1 mirror, e.g. "Ir.dat"
+* reflec_material_M2A_M2B: [str] Material reflectivity file name for M2A and M2B mirror. Use NULL for automatic setting.
+* 
+* %Link
+* https://www.synchrotron-soleil.fr/en/beamlines/rock
+* %Link
+* https://gitlab.synchrotron-soleil.fr/grades/mcxtrace-rock
+* %Link
+* https://github.com/antoinepado/glitch_runner_rock
+*
+* %End
+*******************************************************************************/
+DEFINE INSTRUMENT soleil_rock_spare(
+    Etohit = 5555, 
+    angle_m2a_m2b = 0.008, //(1.75 to 5.2 mrad)*2
+    string reflec_material_M1 = "Ir.dat", 
+    string reflec_material_M2A_M2B = "Pd.dat",
+    de_value = 0.05,
+    ie_value = 0.5,
+    position_cabane = 32.7,
+    mosaic_value = 0.1,
+    delta_d_d_value = 5e-9,
+    string reflec_material_filter = "C-diamond.txt",
+    filter_thickness=250e-6,
+    hslitchamber=10e-3, 
+    vslitchamber=10e-3,
+    m2bc=5000       
+)
+
+DECLARE 
+%{
+    double dE;
+    double calculated_angle;
+    int n;
+    double length_first_crystal;
+    double length_second_crystal;
+    double center_first_crystal;
+    double cc_ax;
+    double cc_ay;
+    double cc_az;
+    double cc_bx;
+    double cc_by;
+    double cc_bz;
+    double cc_cx;
+    double cc_cy;
+    double cc_cz;
+%}
+
+INITIALIZE 
+%{
+    n=3;
+    length_first_crystal=50e-3;
+    length_second_crystal=75e-3;
+    center_first_crystal=19.25;
+    cc_ax = -5.43096*0.40824829;
+    cc_ay = -5.43096*0.70710678;
+    cc_az = 5.43096*0.57735027;
+    cc_bx = 5.43096*0.81649658;
+    cc_by = 5.43096*0;
+    cc_bz = 5.43096*0.57735027;
+    cc_cx = -5.43096*0.40824829;
+    cc_cy = 5.43096*0.70710678;
+    cc_cz = 5.43096*0.57735027;        
+    calculated_angle=RAD2DEG*asin(12398.4198*sqrt(n)/(2*5.43096*Etohit));
+%}
+
+TRACE
+
+COMPONENT Origin = Progress_bar(
+) 
+AT (0, 0, 0) ABSOLUTE
+
+COMPONENT src = Bending_magnet(
+ E0 = Etohit/1000.0, dE = de_value,
+ Ee = 2.75, Ie = ie_value, //Ie can also be 0.5, it depends on the run
+ B = 2.84, //1.72 for the older bm, 2.84 for the superbend
+ sigex=54.9e-6, sigey=20.2e-6 // sigex=60e-6, sigey=24.5e-6,
+ //focus_xw=2*tan(1263e-7/2),focus_yh=2*tan(18e-7/2) //source's divergence
+ //focus_xw=2*tan(0.0015/2), focus_yh=2*tan(0.00022/2) //beamline's acceptance
+ )
+AT (0,0,0) RELATIVE Origin
+
+COMPONENT filter_beryllium = Filter(
+ xwidth = 0.5, yheight = 0.5, zdepth=300e-6, material_datafile="Be.txt")
+AT (0,0,1) RELATIVE PREVIOUS
+
+COMPONENT slit1 = Slit(
+ xwidth = 0.021, yheight = 0.042)
+AT (0,0,7.5336) RELATIVE PREVIOUS
+
+COMPONENT slit2 = Slit(
+ xwidth = 0.02, yheight = 0.01)
+AT (0,0,0.115) RELATIVE PREVIOUS
+
+//COMPONENT filter_rock = Filter(
+// xwidth = 0.5, yheight = 0.5, zdepth=filter_thickness, material_datafile=reflec_material_filter)
+//AT (0,0,1.5014/2) RELATIVE PREVIOUS
+
+//10.15
+COMPONENT mirror_m1 = Mirror_toroid_pothole(
+ coating = reflec_material_M1, zdepth = 1.1,
+ xwidth = 0.015, radius = 0.0317,
+ radius_o = 9020)
+AT (0,0,1.5014) RELATIVE PREVIOUS
+ROTATED (-0.0045*RAD2DEG/2,0,0) RELATIVE PREVIOUS
+EXTEND %{
+if(!SCATTERED) ABSORB;
+%}
+
+COMPONENT arm_m1 = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (0.0045*RAD2DEG/2,0,0) RELATIVE PREVIOUS
+
+//11.6905
+COMPONENT slit3 = Slit(
+ xwidth = 0.02, yheight = 0.01)
+AT (0,(11.6905-10.15)*tan(0.0045),1.5405) RELATIVE PREVIOUS
+
+//16.82
+COMPONENT mirror_m2a = Mirror(
+ coating = reflec_material_M2A_M2B, zdepth = 1.1,
+ xwidth = 0.047)
+AT (0,(16.82-10.15)*tan(0.0045),5.1295+1.5405) RELATIVE arm_m1
+ROTATED (-0.0045*RAD2DEG-angle_m2a_m2b*RAD2DEG/2,0,0) RELATIVE arm_m1
+EXTEND %{
+if(!SCATTERED) ABSORB;
+%}
+
+COMPONENT arm_m2a = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (0.0045*RAD2DEG+angle_m2a_m2b*RAD2DEG/2.0,0,0) RELATIVE PREVIOUS
+
+//17.4856
+COMPONENT e_monitor_before_xtal = E_monitor(
+    nE=500, 
+    filename="e_monitor_before_xtal.dat", 
+    xwidth=0.01, 
+    yheight=0.01,
+    Emin=4, 
+    Emax=40, restore_xray = 1)
+AT (0, (17.4856-16.82)*tan(2*(0.0045/2+angle_m2a_m2b/2)), 1.3312/2) RELATIVE PREVIOUS
+
+//18.1512
+COMPONENT slit4 = Slit(
+ xwidth = 0.02, yheight = 0.01)
+AT (0,(18.1512-16.82)*tan(2*(0.0045/2+angle_m2a_m2b/2)),1.3312) RELATIVE arm_m2a
+
+//theory
+COMPONENT mono_loc = Arm()
+AT (0,(19.25-16.82)*tan(2*(0.0045/2+angle_m2a_m2b/2)),center_first_crystal-16.82) RELATIVE arm_m2a
+
+COMPONENT mono_rotation = Arm() //y looking at the incoming beam, x looking to the left!
+AT (0,0,0) RELATIVE mono_loc
+ROTATED (-0.0045*RAD2DEG-angle_m2a_m2b*RAD2DEG-90,0,0) RELATIVE mono_loc
+
+COMPONENT mono_rotation_bragg_angle = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (-calculated_angle,0,0) RELATIVE PREVIOUS
+
+COMPONENT bragg_crystal = Single_crystal(
+ reflections = "Si.lau", material_datafile = "Si.txt",
+ xwidth = 0.025, yheight = length_first_crystal,
+ zdepth = 0.01, mosaic = mosaic_value,
+ barns = 1, ax = cc_ax,
+ ay = cc_ay, az = cc_az,
+ bx = cc_bx, by = cc_by,
+ bz = cc_bz, cx = cc_cx,
+ cy = cc_cy, cz = cc_cz,
+ p_transmit = -1, order = 1,delta_d_d=delta_d_d_value)
+AT (0,0,-0.01/2) RELATIVE PREVIOUS
+ROTATED (0,0,0) RELATIVE PREVIOUS
+EXTEND %{
+if(!SCATTERED) ABSORB;
+%}
+
+COMPONENT arm_crystal1 = Arm()
+AT (0,0,0) RELATIVE mono_rotation_bragg_angle
+ROTATED (-calculated_angle,0,0) RELATIVE mono_rotation_bragg_angle
+
+SPLIT 10 COMPONENT my_bragg_crystal_two = Single_crystal(
+ reflections = "Si.lau", material_datafile = "Si.txt",
+ xwidth = 0.025, yheight = length_second_crystal,
+ zdepth = 0.01, mosaic = mosaic_value,
+ barns = 1, ax = cc_ax,
+ ay = cc_ay, az = cc_az,
+ bx = cc_bx, by = cc_by,
+ bz = cc_bz, cx = cc_cx,
+ cy = cc_cy, cz = cc_cz,
+ p_transmit = -1, order = 1,delta_d_d=delta_d_d_value)
+AT (0,-((length_first_crystal/2)+(length_second_crystal/2)-0.005),0.01+0.01) RELATIVE bragg_crystal
+ROTATED (calculated_angle,0,0) RELATIVE PREVIOUS
+EXTEND %{
+if(!SCATTERED) ABSORB;
+%}
+
+COMPONENT arm_crystal2 = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (calculated_angle,0,0) RELATIVE PREVIOUS
+
+COMPONENT mono_rotation_undo = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (90,0,0) RELATIVE PREVIOUS
+
+COMPONENT mono_rotation_undo_two = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (0.0045*RAD2DEG+angle_m2a_m2b*RAD2DEG,0,0) RELATIVE PREVIOUS
+
+//21.135
+COMPONENT slit5 = Slit(
+ xwidth = 0.02, yheight = 0.01)
+AT (0, 2*0.01*cos(calculated_angle*DEG2RAD)/cos(2*(0.0045/2+angle_m2a_m2b/2)) + (21.135-19.25)*tan(2*(0.0045/2+angle_m2a_m2b/2)), 21.135-center_first_crystal) RELATIVE mono_loc
+
+//21.25
+COMPONENT slit6 = Slit(
+ xwidth = 0.01, yheight = 0.02)
+AT (0, 2*0.01*cos(calculated_angle*DEG2RAD)/cos(2*(0.0045/2+angle_m2a_m2b/2)) + (21.25-19.25)*tan(2*(0.0045/2+angle_m2a_m2b/2)), 21.25-center_first_crystal) RELATIVE mono_loc
+
+//22.44
+COMPONENT mirror_m2b = Mirror_curved(
+ radius = m2bc, length = 1.1,
+ width = 0.047, coating = reflec_material_M2A_M2B)
+AT (0, 2*0.01*cos(calculated_angle*DEG2RAD)/cos(2*(0.0045/2+angle_m2a_m2b/2)) + (22.44-19.25)*tan(2*(0.0045/2+angle_m2a_m2b/2)), 22.44-center_first_crystal) RELATIVE mono_loc
+ROTATED (angle_m2a_m2b*RAD2DEG/2,0,90) RELATIVE mono_rotation_undo
+EXTEND %{
+if(!SCATTERED) ABSORB;
+%}
+
+//position_cabane
+COMPONENT arm_m2b = Arm()
+AT (0,0,0) RELATIVE PREVIOUS
+ROTATED (0,0,0) RELATIVE mono_rotation_undo_two
+
+COMPONENT e_monitor_4_to_40kev = E_monitor(
+    nE=500, 
+    filename="e_monitor_4_to_40kev.dat", 
+    xwidth=0.01,
+    yheight=0.01,
+    Emin=4, 
+    Emax=40, 
+    restore_xray = 1)
+AT (0, (position_cabane-22.44)*tan(0.0045), position_cabane-22.44) RELATIVE PREVIOUS
+
+COMPONENT e_monitor_4_to_40kev_rock_size = E_monitor(
+    nE=500, 
+    filename="e_monitor_4_to_40kev_rock_size.dat", 
+    xwidth=2*0.008,
+    yheight=0.008,
+    Emin=4, 
+    Emax=40, 
+    restore_xray = 1)
+AT (0, 0, 0) RELATIVE PREVIOUS
+
+
+COMPONENT e_monitor_4_to_40kev_rock_size_excel = E_monitor(
+    nE=500, 
+    filename="e_monitor_4_to_40kev_rock_size_excel.dat", 
+    xwidth=hslitchamber,
+    yheight=vslitchamber,
+    Emin=4, 
+    Emax=40, 
+    restore_xray = 1)
+AT (0, 0, 0) RELATIVE PREVIOUS
+
+COMPONENT psd_monitor = PSD_monitor(
+    filename="psd", 
+    xwidth=hslitchamber, 
+    yheight=vslitchamber,            
+    nx=100,
+    ny=100,
+    restore_xray = 1
+    )
+AT (0, 0, 0) RELATIVE PREVIOUS
+
+COMPONENT psd_monitor_2 = PSD_monitor(
+    filename="psd_2", 
+    xwidth=hslitchamber, 
+    yheight=vslitchamber,           
+    nx=100,
+    ny=100,
+    restore_xray = 1
+    )
+AT (0, 0, 0) RELATIVE PREVIOUS
+
+FINALLY
+%{
+
+%}
+
+END
