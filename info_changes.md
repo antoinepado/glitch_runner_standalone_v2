@@ -17,12 +17,12 @@ Si.lau units fixed converted to barns now.
 
 #### 6
 Fixed weights of photons in the bending magnet. weight_i = Q(E_i, theta_i, psi_i)/(N\*E_i\*q_E(Ei)\*q_theta_psi(theta_i,psi_i))
-where
-N is the number of photons
-q_E is the energy sampling compensation (or probability density)
-q_theta_psi is the angles sampling compensation
-E_i the energy of the photon
-Q is simply the Schwinger's equation without the relative bandwidth factor delta_E/E
+where  
+N is the number of photons  
+q_E is the energy sampling compensation (or probability density)  
+q_theta_psi is the angles sampling compensation  
+E_i the energy of the photon  
+Q is simply the Schwinger's equation without the relative bandwidth factor delta_E/E  
 
 #### 7
 
