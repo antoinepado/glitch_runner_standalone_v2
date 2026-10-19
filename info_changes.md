@@ -16,6 +16,7 @@ Mistake corrected in the single crystal component. 10E was written instead of 1E
 Si.lau units fixed converted to barns now.
 
 #### 6
+Continuation of [work done in 2024](https://github.com/antoinepado/glitch_runner_standalone/tree/master/bm) on the bending magnet.  
 Fixed weights of photons in the bending magnet. weight_i = Q(E_i, theta_i, psi_i)/(N\*E_i\*q_E(Ei)\*q_theta_psi(theta_i,psi_i))
 where  
 N is the number of photons  
