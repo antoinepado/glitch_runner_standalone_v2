@@ -31,3 +31,6 @@ New reflectivities created with the xraydb library. Takes into account the thick
 
 #### 8
 New beamline alignment.
+
+#### 9
+Toroidal mirrors fixed. See [explanation of fix](https://github.com/mccode-dev/McCode/pull/2838)
