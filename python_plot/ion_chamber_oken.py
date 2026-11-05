@@ -319,7 +319,7 @@ Y_flux_abs = []
 
 #density calculated at 1 atm(101325 Pa) and 295 kelvin
 for elt in data_rock:
-    if (compound_gaz==0):
+    if (compound_gaz==0 and rock_data_input!="FeNi"):
         energy_kev = elt[0]/1000.0
         muen = N2(energy_kev)
         counts_data = ParseCounts(energy_kev)
@@ -327,7 +327,15 @@ for elt in data_rock:
         length_chamber = 14.0#cm
         flux = a*35/(1.6E-19)/(energy_kev*1.0E3)
         flux = flux/(1-m.exp(-(muen*1.1573E-3*length_chamber)))
-    elif (compound_gaz==1): 
+    elif (compound_gaz==0 and rock_data_input=="FeNi"):
+        energy_kev = elt[0]/1000.0
+        muen = N2(energy_kev)
+        counts_data = ParseCounts(energy_kev)
+        a = 10*100*counts_data/(1.0E6)/gain
+        length_chamber = 28.0#cm
+        flux = a*35/(1.6E-19)/(energy_kev*1.0E3)
+        flux = flux/(1-m.exp(-(muen*1.1573E-3*length_chamber)))        
+    elif (compound_gaz==1):
         energy_kev = elt[0]/1000.0
         #values for He/N2 (90,10) compound now
         #He 0.9, N2 0.1 from the excel
@@ -361,9 +369,11 @@ Y_mcxtrace = np.zeros(size_data_mcxtrace)
 i=0
 for elt in data_mcxtrace:
     X_mcxtrace[i] = elt[0]
-    Y_mcxtrace[i] = elt[5] #I0
+    if (rock_data_input=="FeNi"):
+        Y_mcxtrace[i] = elt[9] #I0
+    else:
+        Y_mcxtrace[i] = elt[5] #I0
     i+=1
-
 
 scl = Y_mcxtrace[0]
 for i,elt in enumerate(Y_flux_abs):

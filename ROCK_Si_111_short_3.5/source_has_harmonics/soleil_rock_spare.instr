@@ -121,9 +121,9 @@ COMPONENT src = Bending_magnet(
  E0 = Etohit/1000.0, dE = de_value,
  Ee = 2.75, Ie = ie_value, //Ie can also be 0.5, it depends on the run
  B = 2.84, //1.72 for the older bm, 2.84 for the superbend
- sigex=54.9e-6, sigey=20.2e-6 // sigex=60e-6, sigey=24.5e-6,
+ sigex=54.9e-6, sigey=20.2e-6, // sigex=60e-6, sigey=24.5e-6,
  //focus_xw=2*tan(1263e-7/2),focus_yh=2*tan(18e-7/2) //source's divergence
- //focus_xw=2*tan(0.0015/2), focus_yh=2*tan(0.00022/2) //beamline's acceptance
+ focus_xw=2*tan(0.0015/2), focus_yh=2*tan(0.00022/2) //beamline's acceptance
  )
 AT (0,0,0) RELATIVE Origin
 
@@ -267,16 +267,21 @@ COMPONENT mirror_m2b = Mirror_curved(
  radius = m2bc, length = 1.1,
  width = 0.047, coating = reflec_material_M2A_M2B)
 AT (0, 2*0.01*cos(calculated_angle*DEG2RAD)/cos(2*(0.0045/2+angle_m2a_m2b/2)) + (22.44-19.25)*tan(2*(0.0045/2+angle_m2a_m2b/2)), 22.44-center_first_crystal) RELATIVE mono_loc
-ROTATED (angle_m2a_m2b*RAD2DEG/2,0,90) RELATIVE mono_rotation_undo
+ROTATED (angle_m2a_m2b*RAD2DEG/2,0,-90) RELATIVE mono_rotation_undo
 EXTEND %{
 if(!SCATTERED) ABSORB;
 %}
 
-//position_cabane
 COMPONENT arm_m2b = Arm()
 AT (0,0,0) RELATIVE PREVIOUS
 ROTATED (0,0,0) RELATIVE mono_rotation_undo_two
 
+//position_cabane - 10cm, guessed position of slit
+COMPONENT slitchamber = Slit(
+ xwidth = hslitchamber, yheight = vslitchamber)
+AT (0, (position_cabane-0.1-22.44)*tan(0.0045), position_cabane-0.1-22.44) RELATIVE PREVIOUS
+
+//position_cabane
 COMPONENT e_monitor_4_to_40kev = E_monitor(
     nE=500, 
     filename="e_monitor_4_to_40kev.dat", 
@@ -285,24 +290,13 @@ COMPONENT e_monitor_4_to_40kev = E_monitor(
     Emin=4, 
     Emax=40, 
     restore_xray = 1)
-AT (0, (position_cabane-22.44)*tan(0.0045), position_cabane-22.44) RELATIVE PREVIOUS
+AT (0, 0, 0.1) RELATIVE PREVIOUS
 
 COMPONENT e_monitor_4_to_40kev_rock_size = E_monitor(
     nE=500, 
     filename="e_monitor_4_to_40kev_rock_size.dat", 
-    xwidth=2*0.008,
+    xwidth=4*0.008,
     yheight=0.008,
-    Emin=4, 
-    Emax=40, 
-    restore_xray = 1)
-AT (0, 0, 0) RELATIVE PREVIOUS
-
-
-COMPONENT e_monitor_4_to_40kev_rock_size_excel = E_monitor(
-    nE=500, 
-    filename="e_monitor_4_to_40kev_rock_size_excel.dat", 
-    xwidth=hslitchamber,
-    yheight=vslitchamber,
     Emin=4, 
     Emax=40, 
     restore_xray = 1)
@@ -310,18 +304,28 @@ AT (0, 0, 0) RELATIVE PREVIOUS
 
 COMPONENT psd_monitor = PSD_monitor(
     filename="psd", 
-    xwidth=hslitchamber, 
-    yheight=vslitchamber,            
+    xwidth=4*0.008, 
+    yheight=0.008,            
     nx=100,
     ny=100,
     restore_xray = 1
     )
 AT (0, 0, 0) RELATIVE PREVIOUS
 
-COMPONENT psd_monitor_2 = PSD_monitor(
-    filename="psd_2", 
-    xwidth=hslitchamber, 
-    yheight=vslitchamber,           
+COMPONENT e_monitor_4_to_40kev_rock_size_i12 = E_monitor(
+    nE=500, 
+    filename="e_monitor_4_to_40kev_rock_size_i12.dat", 
+    xwidth=4*0.008,
+    yheight=0.008,
+    Emin=4, 
+    Emax=40, 
+    restore_xray = 1)
+AT (0, 0, 0.3) RELATIVE PREVIOUS
+
+COMPONENT psd_monitor_i12 = PSD_monitor(
+    filename="psd_i12", 
+    xwidth=4*0.008, 
+    yheight=0.008,            
     nx=100,
     ny=100,
     restore_xray = 1
