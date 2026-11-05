@@ -39,3 +39,6 @@ Toroidal mirrors fixed. See [explanation of fix](https://github.com/mccode-dev/M
 #### 10
 Curved mirror fixed. See [explanation of fix](https://github.com/mccode-dev/McCode/pull/2936)
 Fixed orientation in the instrument files also.
+
+#### 11
+Place slit 10cm before cabane position.
